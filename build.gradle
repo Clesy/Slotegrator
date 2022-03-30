@@ -1,0 +1,58 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "io.freefair.gradle:lombok-plugin:6.4.0"
+    }
+}
+
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "6.4.0"
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.testng:testng:7.5'
+    testImplementation 'io.cucumber:cucumber-java:7.2.3'
+    testImplementation 'io.rest-assured:rest-assured:4.5.1'
+    testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.22.0'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.1.2'
+    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'io.cucumber:cucumber-testng:7.2.3'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+apply plugin: "io.freefair.lombok"
+
+task cucumberCli() {
+    dependsOn assemble, testClasses
+    [compileJava, compileTestJava]*.options.collect { options -> options.encoding = 'UTF-8' }
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = ['--plugin', 'pretty', '--glue', 'steps', 'src/test/resources/features', "--tags", "@scenario"]
+        }
+    }
+}
+
+test {
+    useTestNG()
+    options.suites("src/test/resources/apitests.xml")
+}
